@@ -1,28 +1,589 @@
 ---
-title: "Untitled"
+title: "Sahil_A1"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = F)
+knitr::opts_chunk$set(warning = F, message = F)
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```{r}
+library(tidyverse)
 
-```{r cars}
-summary(cars)
+year <- 2017
+
+quarters <- 1:4
+type <- "Electric"
+
+pge_17_elec <- NULL
+
+for(quarter in quarters) {
+  
+  filename <- 
+    paste0(
+      "PG&E data/PGE_",
+      year,
+      "_Q",
+      quarter,
+      "_",
+      type,
+      "UsageByZip.csv"
+      
+    )
+
+  
+  temp <- read_csv(filename)
+  
+  pge_17_elec <- rbind(pge_17_elec,temp)
+  # Note rbind requires field names to be consistent for every new thing that you add.
+
+  write_csv(pge_17_elec, "pge_17_elec.csv")
+
+  }
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+
+```{r}
+library(tidyverse)
+
+year <- 2018
+
+quarters <- 1:4
+type <- "Electric"
+
+pge_18_elec <- NULL
+
+for(quarter in quarters) {
+  
+  filename <- 
+    paste0(
+      "PG&E data/PGE_",
+      year,
+      "_Q",
+      quarter,
+      "_",
+      type,
+      "UsageByZip.csv"
+    )
+
+  
+
+  temp <- read_csv(filename)
+  
+  pge_18_elec <- rbind(pge_18_elec,temp)
+  # Note rbind requires field names to be consistent for every new thing that you add.
+
+  write_csv(pge_18_elec, "pge_18_elec.csv")
+}
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+library(tidyverse)
+
+year <- 2019
+
+quarters <- 1:4
+type <- "Electric"
+
+pge_19_elec <- NULL
+
+for(quarter in quarters) {
+  
+  filename <- 
+    paste0(
+      "PG&E data/PGE_",
+      year,
+      "_Q",
+      quarter,
+      "_",
+      type,
+      "UsageByZip.csv"
+    )
+
+   
+  
+  temp <- read_csv(filename)
+  
+  pge_19_elec <- rbind(pge_19_elec,temp)
+  # Note rbind requires field names to be consistent for every new thing that you add.
+
+  write_csv(pge_19_elec, "pge_19_elec.csv")
+}
+```
+
+
+```{r}
+library(tidyverse)
+
+year <- 2020
+
+quarters <- 1:4
+type <- "Electric"
+
+pge_20_elec <- NULL
+
+for(quarter in quarters) {
+  
+  filename <- 
+    paste0(
+      "PG&E data/PGE_",
+      year,
+      "_Q",
+      quarter,
+      "_",
+      type,
+      "UsageByZip.csv"
+    )
+
+
+  
+  temp <- read_csv(filename)
+  
+  pge_20_elec <- rbind(pge_20_elec,temp)
+  # Note rbind requires field names to be consistent for every new thing that you add.
+
+  write_csv(pge_20_elec, "pge_20_elec.csv")
+}
+```
+
+```{r}
+library(tidyverse)
+
+year <- 2021
+
+quarters <- 1:2
+type <- "Electric"
+
+pge_21_elec <- NULL
+
+for(quarter in quarters) {
+  
+  filename <- 
+    paste0(
+      "PG&E data/PGE_",
+      year,
+      "_Q",
+      quarter,
+      "_",
+      type,
+      "UsageByZip.csv"
+    )
+
+
+  
+  temp <- read_csv(filename)
+  
+  pge_21_elec <- rbind(pge_21_elec,temp)
+  # Note rbind requires field names to be consistent for every new thing that you add.
+
+  write_csv(pge_21_elec, "pge_21_elec.csv")
+}
+```
+
+
+```{r}
+library(tidyverse)
+
+year <- 2017
+
+quarters <- 1:4
+type <- "Gas"
+
+pge_17_gas <- NULL
+
+for(quarter in quarters) {
+  
+  filename <- 
+    paste0(
+      "PG&E data/PGE_",
+      year,
+      "_Q",
+      quarter,
+      "_",
+      type,
+      "UsageByZip.csv"
+      
+    )
+
+
+  
+  temp <- read_csv(filename)
+  
+  pge_17_gas <- rbind(pge_17_gas,temp)
+  # Note rbind requires field names to be consistent for every new thing that you add.
+
+  write_csv(pge_17_gas, "pge_17_gas.csv")
+
+  }
+```
+
+```{r}
+library(tidyverse)
+
+year <- 2018
+
+quarters <- 1:4
+type <- "Gas"
+
+pge_18_gas <- NULL
+
+for(quarter in quarters) {
+  
+  filename <- 
+    paste0(
+      "PG&E data/PGE_",
+      year,
+      "_Q",
+      quarter,
+      "_",
+      type,
+      "UsageByZip.csv"
+      
+    )
+
+
+  
+  temp <- read_csv(filename)
+  
+  pge_18_gas <- rbind(pge_18_gas,temp)
+  # Note rbind requires field names to be consistent for every new thing that you add.
+
+  write_csv(pge_18_gas, "pge_18_gas.csv")
+
+  }
+```
+
+```{r}
+library(tidyverse)
+
+year <- 2019
+
+quarters <- 1:4
+type <- "Gas"
+
+pge_19_gas <- NULL
+
+for(quarter in quarters) {
+  
+  filename <- 
+    paste0(
+      "PG&E data/PGE_",
+      year,
+      "_Q",
+      quarter,
+      "_",
+      type,
+      "UsageByZip.csv"
+      
+    )
+
+
+  temp <- read_csv(filename)
+  
+  pge_19_gas <- rbind(pge_19_gas,temp)
+  # Note rbind requires field names to be consistent for every new thing that you add.
+
+  write_csv(pge_19_gas, "pge_19_gas.csv")
+
+  }
+```
+
+```{r}
+library(tidyverse)
+
+year <- 2020
+
+quarters <- 1:4
+type <- "Gas"
+
+pge_20_gas <- NULL
+
+for(quarter in quarters) {
+  
+  filename <- 
+    paste0(
+      "PG&E data/PGE_",
+      year,
+      "_Q",
+      quarter,
+      "_",
+      type,
+      "UsageByZip.csv"
+      
+    )
+
+ 
+  temp <- read_csv(filename)
+  
+  pge_20_gas <- rbind(pge_20_gas,temp)
+  # Note rbind requires field names to be consistent for every new thing that you add.
+
+  write_csv(pge_20_gas, "pge_20_gas.csv")
+
+  }
+```
+
+```{r}
+library(tidyverse)
+
+year <- 2021
+
+quarters <- 1:2
+type <- "Gas"
+
+pge_21_gas <- NULL
+
+for(quarter in quarters) {
+  
+  filename <- 
+    paste0(
+      "PG&E data/PGE_",
+      year,
+      "_Q",
+      quarter,
+      "_",
+      type,
+      "UsageByZip.csv"
+      
+    )
+
+  
+  temp <- read_csv(filename)
+  
+  pge_21_gas <- rbind(pge_21_gas,temp)
+  # Note rbind requires field names to be consistent for every new thing that you add.
+
+  write_csv(pge_21_gas, "pge_21_gas.csv")
+
+  }
+```
+
+```{r}
+library(tidyverse)
+
+
+quarters <- 17:21
+
+type <- "elec"
+
+pge_all_elec1 <- NULL
+
+for(quarter in quarters) {
+  
+  filename <- 
+    paste0(
+      "pge_",
+      quarter,
+      "_",
+      type,
+      ".csv"
+    )
+
+
+  
+  temp <- read_csv(filename)
+  
+  pge_all_elec1 <- rbind(pge_all_elec1,temp)
+  # Note rbind requires field names to be consistent for every new thing that you add.
+    write_csv(pge_all_elec1, "pge_all_elec1.csv")
+}
+```
+
+```{r}
+library(tidyverse)
+
+
+quarters <- 17:21
+
+type <- "gas"
+
+pge_all_gas <- NULL
+
+for(quarter in quarters) {
+  
+  filename1 <- 
+    paste0(
+      "pge_",
+      quarter,
+      "_",
+      type,
+      ".csv"
+    )
+
+  
+  temp <- read_csv(filename1)
+  
+  pge_all_gas <- rbind(pge_all_gas,temp)
+  # Note rbind requires field names to be consistent for every new thing that you add.
+  
+    write_csv(pge_all_gas, "pge_all_gas.csv")
+}
+```
+
+
+
+```{r}
+pge_all_elec1 <- filter(pge_all_elec1, CUSTOMERCLASS %in% c("Elec- Residential","Elec- Commercial"))
+
+
+
+
+pge_all_elec1 <-pge_all_elec1 %>%
+mutate(
+    DATE = 
+      paste0(
+        YEAR,
+        "-",
+        MONTH,
+        "-",
+        "01"
+      )  %>% as.Date(),
+    
+      TOTALKBTU = 
+        paste0(
+          TOTALKWH * 3.142
+  )
+)
+
+
+  write_csv(pge_all_elec1, "pge_all_elec1.csv")
+
+```
+
+```{r}
+pge_all_gas <- filter(pge_all_gas, CUSTOMERCLASS %in% c("Gas- Residential","Gas- Commercial"))
+
+
+
+pge_all_gas <- pge_all_gas %>%
+mutate(
+    DATE = 
+      paste(
+        YEAR,
+        MONTH,
+        "01",
+        sep="-"
+      )  %>% as.Date(),
+    
+      TOTALKBTU = 
+        paste0(
+          TOTALTHM * 99.9761
+  )
+)
+
+
+  write_csv(pge_all_gas, "pge_all_gas.csv")
+```
+
+
+```{r}
+library('tidyverse')
+pge_elec_filtered <- read_csv('C:/Users/Sahil/Documents/School-Stanford/CEE 218X - Shaping the Future of the Bay Area/stadwalkar.github.io/pge_all_elec1.csv')
+
+
+
+pge_gas_filtered <- read_csv('C:/Users/Sahil/Documents/School-Stanford/CEE 218X - Shaping the Future of the Bay Area/stadwalkar.github.io/pge_all_gas.csv')
+
+
+
+
+pge_elec_filtered = subset(pge_elec_filtered, select = -c(ZIPCODE,	MONTH,	YEAR,		COMBINED,	TOTALCUSTOMERS,	TOTALKWH,	AVERAGEKWH) )
+
+write_csv(pge_elec_filtered, "pge_elec_filtered.csv")
+
+pge_gas_filtered = subset(pge_gas_filtered, select = -c(ZIPCODE,	MONTH,	YEAR,	COMBINED,	TOTALCUSTOMERS,	TOTALTHM,	AVERAGETHM) )
+
+write_csv(pge_gas_filtered, "pge_gas_filtered.csv")
+
+
+  pge_final2 <- rbind(pge_elec_filtered,pge_gas_filtered)
+  # Note rbind requires field names to be consistent for every new thing that you add.
+
+  write_csv(pge_final2, "pge_final2.csv")
+
+```
+
+
+
+```{r}
+library('tidyverse')
+pge_1 <- read_csv('C:/Users/Sahil/Documents/School-Stanford/CEE 218X - Shaping the Future of the Bay Area/stadwalkar.github.io/pge_final2.csv')
+
+pge_2 <- filter(pge_1, CUSTOMERCLASS %in% c("Gas- Commercial", "Elec- Commercial"))
+
+
+pge_chart <-
+  pge_2 %>% 
+  ggplot() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  scale_x_date(date_breaks = "1 month", date_labels = "%b-%y") +
+  geom_bar(
+    aes(
+      x = DATE,
+      y = TOTALKBTU,
+      fill = CUSTOMERCLASS
+    ),
+    stat = "identity",
+    position = "stack"
+  ) +
+  labs(
+    x = "Month",
+    y = "kBtu",
+    title = "PG&E Territory Monthly Commercial Electricity & Gas Usage",
+    fill = "Energy Type"
+  )
+
+pge_3 <- filter(pge_1, CUSTOMERCLASS %in% c("Gas- Residential", "Elec- Residential"))
+
+
+pge_chart1 <-
+  pge_3 %>% 
+  ggplot() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  scale_x_date(date_breaks = "1 month", date_labels = "%b-%y") +
+  geom_bar(
+    aes(
+      x = DATE,
+      y = TOTALKBTU,
+      fill = CUSTOMERCLASS
+    ),
+    stat = "identity",
+    position = "stack"
+  ) +
+  labs(
+    x = "Month",
+    y = "kBtu",
+    title = "PG&E Territory Monthly Residential Electricity & Gas Usage",
+    fill = "Energy Type"
+  )
+
+
+```
+
+
+## Explanation
+
+
+Commercial energy and gas consumption took a significant dip during the Covid pandemic, and residential consumption went up slightly from the year before. 
+
+In my analysis, I aggregated all zip codes. This average does not give recognition to the nuance of energy infrastructure in certain zip codes. Some will be very low and others high, plus not all areas in California might be serviced by PG&E. I am also assuming the data is accurate. 
+
+
+```{r}
+pge_chart
+
+```
+
+
+
+```{r}
+
+pge_chart1
+
+```
