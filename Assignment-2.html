@@ -168,10 +168,177 @@ pre code {
 </div>
 
 
-<div id="assignment-2" class="section level2">
-<h2>Assignment 2</h2>
-<p>This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <a href="http://rmarkdown.rstudio.com" class="uri">http://rmarkdown.rstudio.com</a>.</p>
-<p>When you click the <strong>Knit</strong> button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:</p>
+<div id="question-1" class="section level2">
+<h2>Question 1</h2>
+<p>Unfortunately I do not have a plot to show. There was a plot when I was trying with an incorrect method of obtaining the correct geography but that is not included here. I believe I will need the helper code to finish it up.</p>
+<p>One caveat is that the geographical area section cut for 2010 and 2020 is not the exact same. This might skew data slightly as areas will be included or excluded depending on the year.</p>
+<p>Strictly looking at the data it is hard to make a determination on how the population migrates and the density of the area, however I do see certain blocks dramatically increase in area and other blocks dramatically decrease. This is a very desirable neighborhood with the median home being around $1.2 million. It is also very safe with great schools around. It is unsurprising that certain blocks see more inhabitants. The reason why people move might be take advantage of the home prices. At the sky high rates, homes might not be selling fast or they might be bought by developers to add commercial units, thus decreasing population numbers further.</p>
+<p>Please note there is a lot of working code that is commented out as well.</p>
+<!-- # Collect 2020 decennial data -->
+<!-- # Collect 2010 decennial data -->
+<!-- #Shape file blocks for 2020 and nfo boundary -->
+<!-- #Shape file blocks for 2010 and nfo boundary -->
+<!-- # Separate data 2020 -->
+<!-- # Separate data 2010 -->
+<!-- # Bracket based spatial filtering -->
+<pre><code>## [1] 764442</code></pre>
+<pre><code>## [1] 764442</code></pre>
+<pre><code>## 14005 [1]</code></pre>
+<!-- ```{r} -->
+<!-- smc_blocks_3 -->
+<!--   smc_blocks_area %>%   -->
+<!--   mutate(density = pop.1/leftover_area *0.000247105)  -->
+<!-- ``` -->
+<!-- # ```{r} -->
+<!-- # mapview(smc_blocks_3, zcol = "density") -->
+<!-- # ``` -->
+<!-- ```{r} -->
+<!-- nfo_pop_2010 <- -->
+<!--   nfo_pop_2010 %>%  -->
+<!--   st_centroid() %>%  -->
+<!--   .[nfo_pop_2020, ] %>%  -->
+<!--   st_set_geometry(NULL) %>%  -->
+<!--   left_join(nfo_pop_2010 %>% select(block)) %>%  -->
+<!--   st_as_sf() -->
+<!-- sum(nfo_pop_2010$pop) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- nfo_pop_2020 <- nfo_pop_2020 %>%  -->
+<!--   st_centroid() %>%  -->
+<!--   .[nfo_pop_2010, ] %>%  -->
+<!--   st_set_geometry(NULL) %>%  -->
+<!--   left_join(nfo_pop_2020 %>% select(block)) %>%  -->
+<!--   st_as_sf()  -->
+<!-- sum(nfo_pop_2020$pop) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- smc_blocks_area <- -->
+<!--   nfo_pop_2020 %>%  -->
+<!--   st_transform(26910) %>% -->
+<!--   mutate(area = st_area(.)) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- smc_blocks_area <- -->
+<!--   smc_blocks_area %>%  -->
+<!--   mutate(density = pop/area *0.000247105) %>% -->
+<!--   cbind() -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- mapview(smc_blocks_area, zcol = "density") -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- mapview(nfo_pop_2010, zcol = "pop") -->
+<!-- ``` -->
+<!--   # Separate data 2020 -->
+<!--   ```{r} -->
+<!--   dec_vars_2020 <- -->
+<!--     listCensusMetadata( -->
+<!--       name = "2020/dec/pl", -->
+<!--     type = "variables" -->
+<!--   ) -->
+<!-- smc_pop_race_2020 <- -->
+<!--   getCensus( -->
+<!--     name = "dec/pl", -->
+<!--     vintage = 2020, -->
+<!--     region = "block:*",  -->
+<!--     regionin = "state:06+county:081", -->
+<!--     vars = "group(P1)" -->
+<!--   ) %>%  -->
+<!--   mutate( -->
+<!--     block = -->
+<!--       paste0(state,county,tract,block) -->
+<!--   ) %>%  -->
+<!--   select(!c(GEO_ID,state,county,tract,NAME) & !ends_with(c("NA"))) %>%  -->
+<!--   pivot_longer( -->
+<!--     ends_with("N"), -->
+<!--     names_to = "name", -->
+<!--     values_to = "estimate" -->
+<!--   ) %>% -->
+<!--   left_join( -->
+<!--     dec_vars_2020 %>%  -->
+<!--       select(name, label) -->
+<!--   ) %>%  -->
+<!--   select(-name) %>%  -->
+<!--   separate( -->
+<!--     label, -->
+<!--     into = c(NA,NA,"category1","category2"), -->
+<!--     sep = "!!" -->
+<!--   ) -->
+<!-- ``` -->
+<!-- # Separate data 2010 -->
+<!-- ```{r} -->
+<!-- dec_vars_2010 <- -->
+<!--   listCensusMetadata( -->
+<!--     name = "2010/dec/pl", -->
+<!--     type = "variables" -->
+<!--   ) -->
+<!-- smc_pop_race_2010 <- -->
+<!--   getCensus( -->
+<!--     name = "dec/pl", -->
+<!--     vintage = 2010, -->
+<!--     region = "block:*",  -->
+<!--     regionin = "state:06+county:081", -->
+<!--     vars = "group(P1)" -->
+<!--   ) %>%  -->
+<!--   mutate( -->
+<!--     block = -->
+<!--       paste0(state,county,tract,block) -->
+<!--   ) %>%  -->
+<!--   select(!c(GEO_ID,state,county,tract,NAME) & !ends_with(c("NA"))) %>%  -->
+<!--   pivot_longer( -->
+<!--     ends_with("N"), -->
+<!--     names_to = "name", -->
+<!--     values_to = "estimate" -->
+<!--   ) %>% -->
+<!--   left_join( -->
+<!--     dec_vars_2010 %>%  -->
+<!--       select(name, label) -->
+<!--   ) %>%  -->
+<!--   select(-name) %>%  -->
+<!--   separate( -->
+<!--     label, -->
+<!--     into = c(NA,NA,"category1","category2"), -->
+<!--     sep = "!!" -->
+<!--   ) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- dec_vars_2020 %>%  -->
+<!--   filter(grepl("P1",name)) %>%  -->
+<!--   select(name, label) %>%  -->
+<!--   arrange(name) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- smc_pop_race_2020 <- smc_pop_race_2020 %>%  -->
+<!--   mutate( -->
+<!--     race = case_when( -->
+<!--       category1 == "Population of two or more races:" & is.na(category2) ~ "Two or more races", -->
+<!--       category1 == "Population of two or more races:" ~ "", -->
+<!--       !is.na(category2) ~ category2, -->
+<!--       TRUE ~ "" -->
+<!--     ) -->
+<!--   ) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- smc_pop_race_2020 <- smc_pop_race_2020 %>%  -->
+<!--   filter(race != "") %>%  -->
+<!--   select(block, race, pop = estimate) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- smc_blocks_2020 <- blocks("CA", "San Mateo", year = 2020, progress_bar = F) -->
+<!-- nfo_boundary <- places("CA", progress_bar = F) %>%  -->
+<!--   filter(NAME == "North Fair Oaks") -->
+<!-- nfo_pop_2020 <- smc_pop_2020 %>%  -->
+<!--   left_join(smc_blocks_2020 %>% select(block = GEOID20)) %>%  -->
+<!--   st_as_sf() %>%  -->
+<!--   st_centroid() %>%  -->
+<!--   .[nfo_boundary, ] %>%  -->
+<!--   st_set_geometry(NULL) %>%  -->
+<!--   left_join(smc_blocks_2020 %>% select(block = GEOID20)) %>%  -->
+<!--   st_as_sf() -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- mapview(nfo_pop_2020, zcol = "pop") -->
+<!-- ``` -->
 </div>
 
 
