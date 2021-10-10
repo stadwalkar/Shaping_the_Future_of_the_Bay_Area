@@ -1,0 +1,133 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(sf)
+library(censusapi)
+library(mapview)
+library(leaflet)
+library(devtools)
+install_github('walkerke/tigris')
+library(tigris)
+library(here)
+library(dplyr)
+```
+
+
+```{r}
+Sys.setenv(CENSUS_KEY="6b3fccc7aab7b5e8476641264fdd46337fb45dfe")
+
+smc_pop_2020 <-
+  getCensus(
+    name = "dec/pl",
+    vintage = 2020,
+    region = "block:*", 
+    regionin = "state:06+county:081",
+    vars = "P1_001N"
+  ) %>% 
+  transmute(
+    block =
+      paste0(state,county,tract,block),
+    pop = P1_001N
+  )
+
+```
+
+<!-- # Collect 2010 decennial data -->
+
+```{r}
+
+smc_pop_2010 <-
+  getCensus(
+    name = "dec/pl",
+    vintage = 2010,
+    region = "block:*", 
+    regionin = "state:06+county:081",
+    vars = "P001001"
+  ) %>% 
+  transmute(
+    block =
+      paste0(state,county,tract,block),
+    pop = P001001
+  )
+
+```
+
+
+<!-- 2020 blocks -->
+```{r}
+smc_blocks_2020 <- blocks("CA", "San Mateo", year = 2020, progress_bar = F)
+```
+
+<!-- 2010 blocks -->
+```{r}
+smc_blocks_2010 <- blocks("CA", "San Mateo", year = 2010, progress_bar = F)
+```
+
+<!-- Shape file blocks for 2010 and nfo boundary -->
+
+```{r}
+#  nfo_boundary <- places("CA", progress_bar = F) %>%
+#    filter(NAME == "North Fair Oaks")
+# 
+# nfo_pop_2010 <- smc_pop_2010 %>% 
+#   left_join(smc_blocks_2010 %>% select(block = GEOID10)) %>% 
+#   st_as_sf() %>% 
+#   st_centroid() %>% 
+#   .[nfo_boundary, ] %>% 
+#   st_drop_geometry() %>% 
+#   left_join(smc_blocks_2010 %>% select(block = GEOID10)) %>% 
+#   st_as_sf()
+```
+
+<!-- #Shape file blocks for 2010 -->
+```{r}
+place_blocks_2010 <- smc_pop_2010 %>% 
+  left_join(smc_blocks_2010 %>% select(block = GEOID10)) %>% 
+  st_as_sf() %>% 
+  st_centroid() %>% 
+  .[nfo_boundary, ] %>% 
+  st_set_geometry(NULL) %>% 
+  left_join(smc_blocks_2010 %>% select(block = GEOID10)) %>% 
+  st_as_sf()
+```
+```{r}
+place_blocks_2020 <- smc_pop_2020 %>% 
+  left_join(smc_blocks_2020 %>% select(block = GEOID20)) %>% 
+  st_as_sf() %>% 
+  st_centroid() %>% 
+  .[nfo_boundary, ] %>% 
+  st_set_geometry(NULL) %>% 
+  left_join(smc_blocks_2020 %>% select(block = GEOID20)) %>% 
+  st_as_sf()
+```
+```{r}
+smc_blocks_2020_intersect <- place_blocks_2020  %>%
+  st_transform(26910) %>% 
+  mutate(original_area = st_area(.)) %>% 
+  st_intersection(
+    place_blocks_2010 %>% 
+      st_transform(26910)
+  ) %>% 
+  mutate(
+    leftover_area = st_area(.),
+    perc_area = as.numeric(leftover_area / original_area),
+    pop_2020 = pop * perc_area
+    )
+```
+
+```{r}
+place_blocks_2020_reshaped <- smc_blocks_2020_intersect %>%
+  st_drop_geometry() %>% 
+  group_by(block.1) %>% 
+  summarize(
+    pop_2020 = sum(pop_2020, na.rm=T) %>% round()
+  )
+```
+
+
+
+
