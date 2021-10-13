@@ -1,7 +1,15 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Sahil_A2"
+output:
+  html_document:
+    df_print: paged
 ---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+```
+
+
+## Looking at the absolute density difference between 2010 and 2020 I noticed a huge spot in the middle where the density has dramatically increased. My initial impression was that maybe it was lower income housing and many people have moved after the pandemic. After looking at Google maps it is a trailer park, which is unsurprising. In general, there is a net decrease in people per acre over North Fair Oaks. This could be due to increasing rents over the past decade and many people being discplaced. If wealthier families then move into those houses, they tend to have less children which could explain the results.  
 
 ```{r}
 library(tidyverse)
@@ -70,17 +78,17 @@ smc_blocks_2010 <- blocks("CA", "San Mateo", year = 2010, progress_bar = F)
 <!-- Shape file blocks for 2010 and nfo boundary -->
 
 ```{r}
-#  nfo_boundary <- places("CA", progress_bar = F) %>%
-#    filter(NAME == "North Fair Oaks")
-# 
-# nfo_pop_2010 <- smc_pop_2010 %>% 
-#   left_join(smc_blocks_2010 %>% select(block = GEOID10)) %>% 
-#   st_as_sf() %>% 
-#   st_centroid() %>% 
-#   .[nfo_boundary, ] %>% 
-#   st_drop_geometry() %>% 
-#   left_join(smc_blocks_2010 %>% select(block = GEOID10)) %>% 
-#   st_as_sf()
+   nfo_boundary <- places("CA", progress_bar = F) %>%
+    filter(NAME == "North Fair Oaks")
+
+ nfo_pop_2010 <- smc_pop_2010 %>%
+   left_join(smc_blocks_2010 %>% select(block = GEOID10)) %>%
+   st_as_sf() %>%
+   st_centroid() %>%
+   .[nfo_boundary, ] %>%
+   st_drop_geometry() %>%
+   left_join(smc_blocks_2010 %>% select(block = GEOID10)) %>%
+   st_as_sf()
 ```
 
 <!-- #Shape file blocks for 2010 -->
@@ -129,5 +137,54 @@ place_blocks_2020_reshaped <- smc_blocks_2020_intersect %>%
 ```
 
 
+```{r}
+place_blocks_2010 <- subset(place_blocks_2010, select = -c(geometry))
+```
 
+```{r}
+place_blocks_2020_reshaped <-place_blocks_2020_reshaped %>%
+  mutate(block = block.1) %>%
+  select(-block.1)
+```
+
+
+
+```{r}
+place_pop_2010_2020 <- place_blocks_2010 %>% 
+  left_join(place_blocks_2020_reshaped)%>% 
+  mutate(
+    absolute_pop = (pop_2020 - pop) / as.numeric(st_area(.)) * 43560
+  )
+```
+```{r}
+max <- max(abs(place_pop_2010_2020$absolute_pop))
+res_pal <- colorNumeric(
+  palette = "PiYG",
+  domain = 
+    c(-max,max)
+)
+```
+
+
+
+
+```{r}
+leaflet(place_pop_2010_2020) %>% 
+  addProviderTiles(provider = providers$CartoDB.Positron) %>% 
+  addPolygons(
+    fillColor = ~res_pal(absolute_pop),
+    label = ~round(absolute_pop),
+    color = "white",
+    opacity = 0.5,
+    fillOpacity = 0.75,
+    weight = 1
+  ) %>% 
+  
+  addLegend(
+    pal = res_pal,
+    value = c(-max,max),
+    title = " Absolute Change in Density from 2010 to 2020 (people per acre)"
+   
+  )
+```
 
