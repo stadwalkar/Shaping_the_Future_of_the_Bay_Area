@@ -1,0 +1,360 @@
+---
+title: "Sahil_A4"
+output: html_document
+---
+
+"Is there disproportionate education attainment by race in the county?” 
+
+Comparing the bar graphs to that of the "Total", it looks like Asians and Whites are getting bachelor's degrees proportional to their population. Black and other races are not getting bachelor's degrees however, they are still being educated to the associates degree level at least. Here we are talking about people who are over 25 years of age. The other issue that comes to mind is the cost of education in this area. It is very high, and looking at other data, White and Asian households have the highest income, so it makes sense that they can afford university education. Blacks and others are lower earners, and Associate degrees cost less, so this data makes sense. I think the best solution is to make education more accessible, which means marketing to Blacks and others and making it cheaper as well. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+```
+
+
+```{r cars}
+library(tidyverse)
+library(censusapi)
+```
+
+```{r}
+Sys.setenv(CENSUS_KEY="6b3fccc7aab7b5e8476641264fdd46337fb45dfe")
+
+acs_vars_2019_5yr <-
+  listCensusMetadata(
+    name = "2019/acs/acs5",
+    type = "variables"
+  )
+
+bay_income_white_2019 <- getCensus(
+  name = "acs/acs5",
+  vintage = "2019",
+    region = "county:081", 
+    regionin = "state:06",
+    vars = "group(C15002A)"
+  
+) %>%
+  select(ends_with("E") & -c(state,NAME))%>%
+  summarize_all(sum) %>%
+  pivot_longer(
+    everything(),
+    names_to = "name",
+    values_to = "estimate"
+  ) %>%
+  left_join(
+    acs_vars_2019_5yr %>%
+      select(name, label)
+    # can include by name = name but the code is assuming that already
+ ) %>%
+  separate(
+    label, 
+    into = c(NA,NA,"education"),
+    sep=":!!"
+  ) %>%
+  select(-name) %>%
+  filter(!is.na(education)) %>%
+  mutate(
+    race = "white alone"
+  )
+
+
+```
+
+
+```{r}
+
+# full_dataset <- NULL
+# 
+# for(x in 1:7){
+#   full_dataset <- 
+#     rbind(full_dataset, temp)
+#   }  
+
+race_categories <- c(
+  "White alone",
+  "Black or African American alone",
+  "American Indian and Alaska Native alone",
+  "Asian alone",
+  "Native Hawaiian and Other Pacific Islander alone",
+  "Some Other Race alone",
+  "Two or more Races"
+)
+
+bay_income_race_2019 <- 
+  1:7 %>%
+  map_dfr(function(x){
+    getCensus(
+  name = "acs/acs5",
+  vintage = "2019",
+    region = "county:001,013,041,055,075,081,085,095,097", 
+    regionin = "state:06",
+    vars = paste0("group(C15002",LETTERS[x],")")
+) %>%
+  select(ends_with("E") & -c(state,NAME))%>%
+  summarize_all(sum) %>%
+  pivot_longer(
+    everything(),
+    names_to = "name",
+    values_to = "estimate"
+  ) %>%
+  left_join(
+    acs_vars_2019_5yr %>%
+      select(name, label)
+    # can include by name = name but the code is assuming that already
+ ) %>%
+  separate(
+    label, 
+    into = c(NA,NA,"education"),
+    sep=":!!"
+  ) %>%
+  select(-name) %>%
+  filter(!is.na(education)) %>%
+  mutate(
+    race = race_categories[x]
+  )
+    
+  })
+
+```
+
+
+```{r}
+bay_race_total <-
+  bay_income_race_2019 %>% 
+  group_by(race) %>% 
+  summarize(estimate = sum(estimate)) %>% 
+  mutate(education = "Total")
+```
+
+
+```{r}
+bay_income_race_2019 %>% 
+  group_by(education, race) %>% 
+  summarize(estimate = sum(estimate)) %>% 
+  rbind(bay_race_total) %>% 
+  ggplot() +
+  geom_bar(
+    aes(
+      x = education %>% factor(levels = rev(c("Total",unique(bay_income_race_2019$education)))),
+      y = estimate,
+      fill = race %>% factor(levels = rev(unique(bay_income_race_2019$race)))
+    ),
+    stat = "identity",
+    position = "fill"
+  ) +
+  labs(
+    x = "Level of Education",
+    y = "Proportion of population over 25 years old",
+     title = "San Mateo County Educational Attainment by Race",
+    fill = "Race of householder"
+  )+
+  coord_flip()+
+  theme(
+    legend.position = "bottom",
+    legend.direction = "vertical"
+  )  +
+  guides(
+    fill = guide_legend(
+      reverse = T
+    )
+  )
+```
+
+```{r}
+acs_vars_2019_1yr <-
+  listCensusMetadata(
+    name = "2019/acs/acs1",
+    type = "variables"
+  )
+
+race_categories <- c(
+  "White alone, not Hispanic or Latino",
+  "Hispanic or Latino"
+)
+
+bay_income_race_2019 <- 
+  1:2 %>%
+  map_dfr(function(x){
+    getCensus(
+  name = "acs/acs1",
+  vintage = "2019",
+    region = "county:001,013,041,055,075,081,085,095,097", 
+    regionin = "state:06",
+    vars = paste0("group(C15002",LETTERS[x+7],")")
+) %>%
+  select(ends_with("E") & -c(state,NAME))%>%
+  summarize_all(sum) %>%
+  pivot_longer(
+    everything(),
+    names_to = "name",
+    values_to = "estimate"
+  ) %>%
+  left_join(
+    acs_vars_2019_1yr %>%
+      select(name, label)
+    # can include by name = name but the code is assuming that already
+ ) %>%
+  separate(
+    label, 
+    into = c(NA,NA,"education"),
+    sep=":!!"
+  ) %>%
+  filter(!is.na(education)) %>%
+      select(-name) %>%
+  mutate(
+    race = race_categories[x]
+  )
+  })
+
+```
+
+
+```{r}
+
+bay_income_race_2019_less_than_hs <- 
+  2 %>%
+  map_dfr(function(x){
+    getCensus(
+  name = "acs/acs1",
+  vintage = "2019",
+    region = "county:001,013,041,055,075,081,085,095,097", 
+    regionin = "state:06",
+   vars = paste0("group(C1500",x,")")
+) %>%
+  select(ends_with("E") & -c(state,NAME))%>%
+  summarize_all(sum) %>%
+  pivot_longer(
+    everything(),
+    names_to = "name",
+    values_to = "estimate"
+  ) %>%
+  left_join(
+    acs_vars_2019_1yr %>%
+      select(name, label)
+    # can include by name = name but the code is assuming that already
+ ) %>%
+  separate(
+    label, 
+    into = c(NA,NA,"education"),
+    sep=":!!"
+  ) %>%
+  filter(!is.na(education)) %>%
+      select(-name) %>%
+  mutate(
+    race = "Not White, Not Latinx"
+  )
+  })
+
+```
+
+```{r}
+bay_income_race_2019_less_than_hs[1,2] = "Less than high school diploma" 
+  bay_income_race_2019_less_than_hs[2,2] = "Less than high school diploma"
+  
+  
+   bay_income_race_2019_less_than_hs[3,2] = "High school graduate (includes equivalency)"
+
+
+bay_income_race_2019_less_than_hs[4,2] = "Some college or associate's degree"
+bay_income_race_2019_less_than_hs[5,2] = "Some college or associate's degree"
+
+bay_income_race_2019_less_than_hs[6,2] ="Bachelor's degree or higher"
+bay_income_race_2019_less_than_hs[7,2] ="Bachelor's degree or higher"
+
+
+bay_income_race_2019_less_than_hs[8,2] = "Less than high school diploma" 
+  bay_income_race_2019_less_than_hs[9,2] = "Less than high school diploma"
+  
+  
+   bay_income_race_2019_less_than_hs[10,2] = "High school graduate (includes equivalency)"
+
+
+bay_income_race_2019_less_than_hs[11,2] = "Some college or associate's degree"
+bay_income_race_2019_less_than_hs[12,2] = "Some college or associate's degree"
+
+bay_income_race_2019_less_than_hs[13,2] ="Bachelor's degree or higher"
+bay_income_race_2019_less_than_hs[14,2] ="Bachelor's degree or higher"
+
+```
+
+```{r}
+bay_income_race_2019 <-bay_income_race_2019 %>% 
+  group_by(education, race) %>% 
+  summarize(estimate = sum(estimate))
+```
+
+
+```{r}
+bay_income_race_2019_less_than_hs <-bay_income_race_2019_less_than_hs %>% 
+  group_by(education, race) %>% 
+  summarize(estimate = sum(estimate))
+```
+
+
+```{r}
+bay_income_race_2019 <- bay_income_race_2019 %>% rbind(bay_income_race_2019_less_than_hs)
+```
+
+
+```{r}
+bay_income_race_2019[9,3] = bay_income_race_2019[9,3] - bay_income_race_2019[1,3]-bay_income_race_2019[2,3]
+
+bay_income_race_2019[10,3] = bay_income_race_2019[10,3] - bay_income_race_2019[3,3]-bay_income_race_2019[4,3]
+
+bay_income_race_2019[11,3] = bay_income_race_2019[11,3] - bay_income_race_2019[5,3]-bay_income_race_2019[6,3]
+
+bay_income_race_2019[12,3] = bay_income_race_2019[12,3] - bay_income_race_2019[7,3]-bay_income_race_2019[8,3]
+
+```
+
+
+```{r}
+bay_race_total_1 <-
+  bay_income_race_2019 %>% 
+  group_by(race) %>% 
+  summarize(estimate = sum(estimate)) %>% 
+  mutate(education = "Total")
+```
+
+
+```{r}
+bay_income_race_2019 <- bay_income_race_2019 %>% 
+     group_by(education, race) %>% 
+     summarize(estimate = sum(estimate)) %>% 
+     rbind(bay_race_total_1)
+```
+
+Here, looking at educational attainment by ethnicity it looks like Hispanics are under represented for attaining a bachelors degree. From our analysis it looks like we need to do better to include black and Hispanic folks in attaining higher education in Santa Clara County.
+
+```{r}
+bay_income_race_2019 %>% 
+  group_by(education, race) %>% 
+  summarize(estimate = sum(estimate)) %>% 
+  ggplot() +
+  geom_bar(
+    aes(
+      x = education %>% factor(levels = unique(bay_income_race_2019$education)),
+      y = estimate,
+      fill = race %>% factor(levels = unique(bay_income_race_2019$race))
+    ),
+    stat = "identity",
+    position = "fill"
+  ) +
+  labs(
+    x = "Level of Education",
+    y = "Proportion of population 25 years or older",
+     title = "San Mateo County educational attainment by ethnicity",
+    fill = "Race of householder"
+  )+
+  coord_flip()+
+  theme(
+    legend.position = "bottom",
+    legend.direction = "vertical"
+  )  +
+  guides(
+    fill = guide_legend(
+      reverse = T
+    )
+  )
+```
+
