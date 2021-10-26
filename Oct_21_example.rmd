@@ -1,0 +1,62 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(censusapi)
+library(sf)
+library(mapview)
+library(tigris)
+library(leaflet)
+```
+
+
+```{r}
+
+library(readxl)
+
+temp <- tempfile()
+download.file("https://oehha.ca.gov/media/downloads/calenviroscreen/document/calenviroscreen40resultsdatadictionaryf2021.zip",destfile = temp)
+
+ces4 <- read_excel(
+  unzip(
+    temp, 
+    "calenviroscreen40resultsdatadictionary_F_2021.xlsx"
+  ), 
+  sheet = "CES4.0FINAL_results"
+)
+
+unlink(temp)
+```
+
+```{r}
+colnames(ces4)
+
+ces4_clean <- ces4 %>% 
+  select(!ends_with("Pctl"))
+
+sum(is.na(ces4_clean$Poverty))
+
+ces4_clean%>%
+  #.$Poverty %>% 
+  pull(Poverty) %>%
+  is.na()
+sum()
+
+
+ca_tracts <- tracts("CA")
+
+ces4_map <- ces4_clean %>%
+  left_join(
+    cs_tracts %>% 
+      select(GEOID),
+    mutate(GEOID = GEOID %>% as.numeric()),
+    by = c("Census Tract" = "GEOID") %>%
+      st_as_sf()
+  )
+
+```
+
+
