@@ -1,0 +1,166 @@
+---
+title: "Sahil_A6"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+```
+
+
+```{r}
+library(censusapi)
+library(tidyverse)
+library(tigris)
+library(sf)
+library(leaflet)
+library(mapview)
+
+# Sys.setenv(CENSUS_KEY="c8aa67e4086b4b5ce3a8717f59faa9a28f611dab")
+# 
+#  pums_2019_1yr <- getCensus(
+#    name = "acs/acs1/pums",
+#    vintage = 2019,
+#    region = "public use microdata area:*",
+#    regionin = "state:06",
+#    vars = c(
+#      "SERIALNO",
+#      "SPORDER",
+#      "PWGTP",
+#      "WGTP",
+#      "YBL",
+#      "BLD",
+#      "TEN",
+#      "MV",
+#      "HINCP",
+#      "AGEP"
+#    )
+#  )
+#  saveRDS(pums_2019_1yr, "a6_pums.rds")
+pums_2019_1yr <- readRDS("a6_pums.rds")
+
+ca_pumas <-
+  pumas("CA", cb = T, progress_bar = F)
+
+sf_boundary <-
+  counties("CA", cb = T, progress_bar = F) %>%
+  filter(NAME == "San Francisco")
+
+sf_pumas <-
+  ca_pumas %>% 
+  st_centroid() %>% 
+  .[sf_boundary, ] %>% 
+  st_drop_geometry() %>% 
+  left_join(ca_pumas %>% select(GEOID10)) %>% 
+  st_as_sf()
+```
+
+```{r}
+sf_pums <- pums_2019_1yr %>% 
+  mutate(
+    PUMA = str_pad(public_use_microdata_area,5,"left","0")
+  ) %>% 
+  filter(PUMA %in% sf_pumas$PUMACE10)
+
+sf_pums_clean <- sf_pums %>%
+  mutate(
+    YBL = as.numeric(YBL),
+     AGEP = as.numeric(AGEP),
+     HINCP = as.numeric(HINCP)
+  ) %>% 
+  filter(YBL %in% 1:3) %>%
+  group_by(SERIALNO) %>%
+  arrange(AGEP) %>% 
+  summarise_all(first)
+
+
+```
+
+
+```{r}
+sf_pums_clean <-
+  sf_pums_clean %>% 
+  mutate(
+    leadrisk = ifelse(
+        (AGEP < 6) &
+        (HINCP < 90000),
+      1,
+      0
+    )
+  ) 
+
+```
+
+
+
+```{r}
+logit_model <- glm(
+  leadrisk ~ PUMA + BLD + TEN + MV,
+  family = quasibinomial(),
+  data = sf_pums_clean
+)
+
+summary(logit_model)
+```
+
+It looks like South San Francisco is the most at risk for lead given our prediction model. Rented houses (TEN3&4) are also statistically significant for lead risk. Other factors include multifamily housing structures.
+
+
+```{r}
+mapview(sf_pumas)
+```
+
+
+```{r}
+samp <- sample_n(sf_pums_clean, 1, replace = FALSE, weight = NULL)
+```
+
+```{r}
+predict(logit_model, samp, type = "response")
+```
+
+The latter row above is the probability that the randomly selected row from my full data set is at risk for lead. It varies every time the code is run.
+
+
+```{r}
+sf_pums_predicted <- sf_pums_clean %>%
+  mutate(predicted =   predict(logit_model, sf_pums_clean, type = "response" ))
+
+```
+
+
+```{r}
+ summary_2x2 <-
+   sf_pums_predicted %>%
+   mutate(
+    leadrisk = ifelse(
+       leadrisk == 1,
+       "Yes",
+       "No "
+     ),
+   predicted_yes = ifelse(
+     predicted >=0.1,
+     as.numeric(WGTP),
+     0
+   ),
+  predicted_no = ifelse(
+     predicted <=0.1,
+     as.numeric(WGTP),
+     0
+   ))
+
+summary_2x2 <- summary_2x2 %>% 
+  mutate(leadrisk = as.character(leadrisk)) %>% 
+  group_by(leadrisk) %>%
+  summarize(
+      `predicted_yes` = sum(predicted_yes),
+      `predicted_no` = sum(predicted_no)
+  )
+
+```
+
+```{r}
+summary_2x2
+```
+
+Here I'm using my model to run against all all the values in my data structure. Sending out a test kit to 2777 people who I've predicted as having risk but actually don't, is not a bad thing in my opinion. Sending out more tests is safer despite the worrying of these households, over people who are predicted negative but are actually positive. This is the case for 3988 people. These people will be running around not knowing they are at risk. I've only managed to reach about 10% of the people who are actually at risk but have sent out 3198 tests in total. Ways to improve this strategy is of course to use weighted values in the prediction. If I don't have access to the income and presence of children at the address level, I can target the pums of South SF with outreach and education. I can focus especially at schools where children are very likely to be present.  

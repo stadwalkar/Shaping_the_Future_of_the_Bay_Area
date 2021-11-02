@@ -1,0 +1,165 @@
+---
+title: "Sahil_A3"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+```
+
+
+## Here I have calculated the percentage of non-english renter households that earn less than the National median income (2020 value) of $67, 521 and without health coverage. From the interview and pod discussion, we determined that those who can't obtain resources on heatwaves of any kind (due to language barrier) combined with those who are also low income earners and don't have proper medical coverage are likely most at risk to suffer from heatwaves. The total number of households is 41,867 in the Bay Area, which of a population of over 8 million is not a huge percentage. However, access to information should be provided to everyone, especially in this area where the effects of heatwaves keep getting worse. We need to focus on better outreach in areas like San Jose, Daly City and east Oakland where there are higher concentrations of these people. 
+
+```{r}
+library(censusapi)
+library(tidyverse)
+library(tigris)
+library(sf)
+library(leaflet)
+
+Sys.setenv(CENSUS_KEY="6b3fccc7aab7b5e8476641264fdd46337fb45dfe")
+
+```
+
+```{r}
+
+pums_hca_2019_1yr <- read_csv(file = "C:/Users/Sahil/Documents/School-Stanford/CEE 218X - Shaping the Future of the Bay Area/stadwalkar.github.io/psam_h06.csv")
+
+```
+
+```{r}
+pums_2019_1yr <- getCensus(
+  name = "acs/acs1/pums",
+  vintage = 2019,
+  region = "public use microdata area:*", 
+  regionin = "state:06",
+  vars = c(
+    "SERIALNO",
+    "HINCP",
+    "TEN","SERIALNO",
+    "SPORDER",
+    "PWGTP",
+    "WGTP",
+    "HHL",
+    "HICOV"
+  )
+)
+```
+
+```{r}
+ca_pumas <-
+  pumas("CA", cb = T, progress_bar = F)
+
+bay_county_names <-
+  c(
+    "Alameda",
+    "Contra Costa",
+    "Marin",
+    "Napa",
+    "San Francisco",
+    "San Mateo",
+    "Santa Clara",
+    "Solano",
+    "Sonoma"
+  )
+
+bay_counties <-
+  counties("CA", cb = T, progress_bar = F) %>%
+  filter(NAME %in% bay_county_names)
+
+bay_pumas <-
+  ca_pumas %>% 
+  st_centroid() %>% 
+  .[bay_counties, ] %>% 
+  st_drop_geometry() %>% 
+  left_join(ca_pumas %>% select(GEOID10)) %>% 
+  st_as_sf()
+
+bay_pums <-
+  pums_2019_1yr %>% 
+  mutate(
+    PUMA = str_pad(public_use_microdata_area,5,"left","0")
+  ) %>% 
+  filter(PUMA %in% bay_pumas$PUMACE10)
+```
+
+```{r}
+bay_pums_example <-
+  bay_pums %>% 
+  filter(!duplicated(SERIALNO)) %>% 
+  mutate(
+    WGTP = as.numeric(WGTP),
+    nonenglish_renter_lowinc = ifelse(
+      (HHL != 1) &
+        (TEN == 3) &
+        (HINCP < 67521) &
+        (HICOV == 2),
+      WGTP,
+      0
+    )
+  ) 
+
+```
+  
+  
+ 
+```{r}
+  sum(bay_pums_example$nonenglish_renter_lowinc)
+
+```
+
+
+```{r}
+  bay_pums_example <-bay_pums_example %>%
+group_by(PUMA) %>% 
+  summarize(
+    perc_nonenglish_renter_lowinc =
+      sum(nonenglish_renter_lowinc, na.rm =T)/sum(WGTP, na.rm = T)*100
+  ) %>% 
+  left_join(
+    bay_pumas %>% 
+      select(PUMACE10),
+    by = c("PUMA" = "PUMACE10")
+  ) %>% 
+  st_as_sf()
+```
+
+
+
+
+```{r}
+pums_pal <- colorNumeric(
+  palette = "Oranges",
+  domain = bay_pums_example$perc_nonenglish_renter_lowinc
+)
+
+leaflet() %>%
+  addTiles() %>% 
+  addPolygons(
+    data = bay_pums_example,
+    fillColor = ~pums_pal(perc_nonenglish_renter_lowinc),
+    color = "white",
+    opacity = 0.5,
+    fillOpacity = 0.5,
+    weight = 1,
+    label = ~paste0(
+      round(perc_nonenglish_renter_lowinc), 
+      "% non-English-speaking renter households making less than the 2020 National median income without health coverage"
+    ),
+    highlightOptions = highlightOptions(
+      weight = 2,
+      opacity = 1
+    )
+  ) %>% 
+  addLegend(
+    data = bay_pums_example,
+    pal = pums_pal,
+    values = ~perc_nonenglish_renter_lowinc,
+    title = "% non-English-speaking<br>renter households<br>making less than the 2020 National median income ($67, 521) without health coverage"
+  )
+```
+
+
+
