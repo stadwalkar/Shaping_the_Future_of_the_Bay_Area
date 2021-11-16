@@ -1,0 +1,170 @@
+---
+title: "r  lab 11.4"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tigris)
+library(sf)
+library(tidyverse)
+library(mapview)
+library(readxl)
+library(spdep)
+library(spatialreg)
+library(survey)
+
+sf_boundary <-
+  counties("CA", cb = T, progress_bar = F) %>%
+  filter(NAME == "San Francisco")
+
+ca_pumas <-
+  pumas("CA", cb = T, progress_bar = F)
+
+sf_pumas <-
+  ca_pumas %>% 
+  st_centroid() %>% 
+  .[sf_boundary, ] %>% 
+  st_set_geometry(NULL) %>% 
+  left_join(ca_pumas %>% select(GEOID10)) %>% 
+  st_as_sf()
+```
+
+```{r}
+temp <- tempfile()
+download.file("https://www2.census.gov/programs-surveys/acs/data/pums/2019/1-Year/csv_hca.zip",destfile = temp)
+
+pums_hca_2019_1yr <- read_csv(unzip(temp,"psam_h06.csv"))
+
+unlink(temp)
+```
+
+```{r}
+data <- pums_hca_2019_1yr %>%
+  filter(PUMA %in% sf_pumas$PUMACE10) %>%
+  mutate(
+    HINCP = as.numeric(HINCP),
+    TEN = factor(TEN),
+    MV = factor(MV)
+  ) %>%
+  select (
+    HINCP,
+    TEN,
+    MV,
+    starts_with("WGTP")
+  ) %>%
+  filter_all(all_vars(!is.na(.)))
+
+design <- svrepdesign(
+  data = data,
+  type = "ACS",
+  repweights = data[ ,5:84],
+  weights = ~WGTP
+)
+
+model <- svyglm(
+  formula = HINCP ~ TEN + MV,
+  family = gaussian(),
+  design = design
+)
+
+summary(model)
+```
+
+```{r}
+weighted_model <- data %>% 
+  lm(
+    formula = HINCP ~ TEN + MV,
+    data = .,
+    weights = WGTP
+  )
+summary(weighted_model)
+```
+
+```{r}
+replicates_model <- 
+  1:80 %>% 
+  map_dfr(function(x){
+    data %>% 
+      rename(replicate = paste0("WGTP", x)) %>% 
+      lm(
+        formula = HINCP ~ TEN + MV,
+        data = .,
+        weights = replicate
+      ) %>% 
+      .$coefficients %>% 
+      as.data.frame() %>%
+      rownames_to_column()
+    
+  })
+```
+
+```{r}
+weighted_model_summary <- replicates_model %>% 
+  rename(replicate = ".") %>%
+  left_join(
+    weighted_model$coefficients %>%
+      as.data.frame() %>%
+      rownames_to_column() %>%
+      rename(base = ".")
+  ) %>%
+  group_by(rowname) %>%
+  summarize(
+    stderr = sqrt(4/80*sum((base-replicate)^2)),
+    base = first(base)
+  ) %>% 
+  select(
+    rowname,
+    base,
+    stderr)
+
+```
+
+New Demo
+
+```{r}
+
+sf_healthcare <- read_csv("https://data.sfgov.org/api/views/jhsu-2pka/rows.csv?accessType=DOWNLOAD")
+
+sf_healthcare_map <- sf_healthcare %>%
+  st_as_sf(wkt = "point", crs = 4326)
+
+mapview(sf_healthcare_map)
+```
+
+
+```{r}
+buffer <- sf_healthcare_map %>% 
+  st_transform(26910) %>% 
+  st_buffer(800) %>% 
+  st_transform(4269)
+
+mapview(buffer)
+```
+
+```{r}
+sf_cbgs <- block_groups("CA", "San Francisco")
+
+mapview(sf_cbgs) + mapview(buffer)
+
+sf_cbgs_within_halfmile <- sf_cbgs %>% 
+  st_centroid() %>% 
+  .[buffer, ]
+
+mapview(sf_cbgs_within_halfmile)
+
+sf_cbgs_healthcare <- sf_cbgs %>% 
+  mutate(
+    within_halfmile_healthcare = ifelse(
+      GEOID %in% sf_cbgs_within_halfmile$GEOID,
+      1,
+      0
+    )
+  )
+
+mapview(sf_cbgs_healthcare, zcol = "within_halfmile_healthcare")
+```
+

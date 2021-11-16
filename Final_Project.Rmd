@@ -1,0 +1,200 @@
+---
+title: "Final Project"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+```
+
+```{r}
+library(tidyverse)
+library(censusapi)
+library(sf)
+library(mapview)
+library(tigris)
+library(leaflet)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+Sys.setenv(CENSUS_KEY="6b3fccc7aab7b5e8476641264fdd46337fb45dfe")
+
+
+##Change to SF Bay area not San Mateo County 
+
+smc_pop_2020 <-
+  getCensus(
+    name = "dec/pl",
+    vintage = 2020,
+    region = "block:*", 
+    regionin = "state:06+county:081",
+    vars = "P1_001N"
+  ) %>% 
+  transmute(
+    block =
+      paste0(state,county,tract,block),
+    pop = P1_001N
+  )
+
+```
+
+```{r}
+
+sf_police_new <- read_csv("Local_Law_Enforcement_Locations.csv")
+
+filtered <- filter(
+  sf_police_new,
+  STATE %in%
+    c(
+      "CA"
+      )
+)
+
+filtered <- filter(
+  filtered,
+  CITY %in%
+    c(
+      "SAN FRANCISCO"
+      )
+)
+
+sf_police_map_new <- st_as_sf(filtered, coords = c('LONGITUDE', 'LATITUDE'),crs = 4326)
+
+mapview(sf_police_map_new)
+```
+
+```{r}
+buffer <- sf_police_map_new %>% 
+  st_transform(26910) %>% 
+  st_buffer(800) %>% 
+  st_transform(4269)
+
+mapview(buffer)
+```
+
+```{r}
+sf_cbgs <- block_groups("CA", "San Francisco")
+
+mapview(sf_cbgs) + mapview(buffer)
+
+sf_police_within_halfmile <- sf_cbgs %>% 
+  st_centroid() %>% 
+  .[buffer, ]
+
+mapview(sf_police_within_halfmile)
+
+sf_cbgs_police <- sf_cbgs %>% 
+  mutate(
+    within_halfmile_police_station = ifelse(
+      GEOID %in% sf_police_within_halfmile$GEOID,
+      1,
+      0
+    )
+  )
+
+mapview(sf_cbgs_police, zcol = "within_halfmile_police_station")
+```
+
+ATTEMPT TO DO EQUITY ANALYSIS
+
+```{r}
+acs_vars_2019_5yr <-
+  listCensusMetadata(
+    name = "2019/acs/acs5",
+    type = "variables"
+  )
+
+bay_income_white <-
+  getCensus(
+    name = "acs/acs5",
+    vintage = 2019,
+    region = "county:075",
+    regionin = "state:06",
+    vars = "group(B19001A)"
+  ) %>%
+  select(!c(GEO_ID,state,NAME) & !ends_with(c("EA","MA","M"))) %>%
+  pivot_longer(
+    ends_with("E"),
+    names_to = "name",
+    values_to = "estimate"
+  ) %>%
+  left_join(
+    acs_vars_2019_5yr %>% 
+      select(name, label)
+  ) %>% 
+  select(-name) %>% 
+  separate(
+    label,
+    into = c(NA,NA,"income"),
+    sep = "!!"
+  ) %>% 
+  filter(!is.na(income))
+
+
+
+census_race_categories <- 
+  c(
+    "White Alone",
+    "Black or African American",
+    "American Indian and Alaska Native Alone",
+    "Asian Alone",
+    "Native Hawaiian and Other Pacific Islander Alone",
+    "Some Other Race Alone",
+    "Two or More Races"
+  )
+
+bay_income_race <-
+  1:7 %>% 
+  map_dfr(function(x){
+    getCensus(
+      name = "acs/acs5",
+      vintage = 2019,
+      region = "county:075",
+      regionin = "state:06",
+      vars = paste0("group(B19001",LETTERS[x],")")
+    ) %>%
+      select(!c(GEO_ID,state,NAME) & !ends_with(c("EA","MA","M"))) %>%
+      pivot_longer(
+        ends_with("E"),
+        names_to = "name",
+        values_to = "estimate"
+      ) %>%
+      left_join(
+        acs_vars_2019_5yr %>% 
+          select(name, label)
+      ) %>% 
+      select(-name) %>% 
+      separate(
+        label,
+        into = c(NA,NA,"income"),
+        sep = "!!"
+      ) %>% 
+      filter(!is.na(income)) %>% 
+      mutate(race = census_race_categories[x])
+  })
+
+bay_income_race %>% 
+  group_by(income, race) %>% 
+  summarize(estimate = sum(estimate)) %>% 
+  ggplot() +
+  geom_bar(
+    aes(
+      x = income,
+      y = estimate,
+      fill = race
+    ),
+    stat = "identity",
+    position = "stack"
+  ) +
+  labs(
+    x = "Household income",
+    y = "Number of households",
+    title = "Bay Area household income by race",
+    fill = "Race of householder"
+  ) +
+  coord_flip()
+```
+

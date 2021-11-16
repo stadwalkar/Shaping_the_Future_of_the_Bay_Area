@@ -1,0 +1,148 @@
+---
+title: "Nov_9_lab"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(censusapi)
+library(sf)
+library(mapview)
+library(tigris)
+library(leaflet)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+fire <- sample(
+  c(0,1),
+    size = 10000,
+    replace = T
+)
+  
+smoke <- ifelse(
+  fire == 1, 
+  sample(
+    c(0,1),
+    size = 10000,
+    replace = T,
+    prob = c(0.05, 0.95)
+  ),
+  sample(
+    c(0,1),
+    size = 10000,
+    replace = T,
+    prob = c(0.8,0.2)
+  )
+)
+  
+alarm <-ifelse(
+  smoke == 1, 
+    sample(
+    c(0,1),
+    size = 10000,
+    replace = T,
+    prob = c(0.01, 0.99)
+  ),
+  sample(
+    c(0,1),
+    size = 10000,
+    replace = T,
+    prob = c(0.99,0.01)
+  )
+)
+
+  
+data <- data.frame(
+  fire = fire,
+  smoke = smoke,
+  alarm = alarm
+)
+```
+
+
+```{r}
+model <- glm(
+alarm ~ fire + smoke,
+data = data,
+family = quasibinomial()
+)
+```
+
+```{r}
+summary(model)
+exp(model$coefficients[2])/((model$coefficients[2])+1)
+```
+
+```{r}
+age <- sample(
+    5:10,
+    size = 10000,
+    replace = T,
+  )
+
+shoe <- age + rnorm(10000)
+
+reading <- age*2-5 + rnorm(10000)*1.5
+
+daa <-data.frame(
+age = age,
+shoe = shoe,
+reading = reading
+)
+```
+
+```{r}
+model2 <- lm(
+  reading ~ shoe,
+  data=data
+)
+
+summary(model2)
+
+model12 <- lm(
+  reading ~ shoe + age,
+  data = data
+)
+
+summary(model12)
+
+```
+```{r}
+talent <- rnorm(10000)
+  
+  beauty <- rnorm(10000)
+  
+  celebrity <- ifelse(
+    talent+beauty >2,
+    1,
+    0
+  )
+    
+    daat <-data.frame(
+talent = talent,
+celebrity = celebrity,
+beauty = beauty
+)
+    
+    model <- glm(
+      celebrity ~ talent, 
+      data = data,
+      family = quasibinomial()
+    )
+  summary (model)
+  model <- lm(
+    beauty ~ talent + celebrity,
+    data = data
+  )
+  
+  summary(model)
+  
+```
+
