@@ -112,6 +112,7 @@ place_blocks_2020 <- smc_pop_2020 %>%
   left_join(smc_blocks_2020 %>% select(block = GEOID20)) %>% 
   st_as_sf()
 ```
+
 ```{r}
 smc_blocks_2020_intersect <- place_blocks_2020  %>%
   st_transform(26910) %>% 

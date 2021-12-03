@@ -5,6 +5,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F, warning = F, message = F)
+
 ```
 
 ```{r}
@@ -18,30 +19,29 @@ library(tidyr)
 library(dplyr)
 library(ggplot2)
 ```
+##An Investigation Into Changing Demographics Near Police Stations in San Francisco
 
-```{r}
-Sys.setenv(CENSUS_KEY="6b3fccc7aab7b5e8476641264fdd46337fb45dfe")
+Crime in San Francisco has seen a significant rise throughout the Covid-19  pandemic. November 2019 to November 2020 shows a 42% jump in burglaries citywide and 34% uptick in car thefts1. This coincides with a rise in the homeless population; in 2019 there was an increase of more than 30% over the 2017 count2. It’s easy to attribute a causal relationship between the two, but that inference may be based more on bias than fact. There are a number of confounding factors that may exacerbate these issues, such as ineffectual policing and increasing home prices. The San Francisco Police budget has steadily increased year over year,3 yet many of these social inequity problems persist not only in SF but the rest of urban America. These include not only homlessness and crime, but racial profiling by the police, the lack of prosecution for crimes4 leading to recidivism, and more. 
+
+For my project, I will use San Francisco as an example to explore the relationship between police stations and the demographics of residents nearby. Using census data, I can identify the demographic of those that live within a half mile of a police station and perform an equity analysis. My hypothesis is that most police stations are placed in wealthy areas to provide a sense of security, whereas lower income neighborhoods will have less policing, which in turn leads to more crime. 
+
+In 2014, Californians passed Proposition 47 that reclassified nonviolent theft as misdemeanors as long as the stolen goods are worth less than $9505. That is just one example of decriminalization in San Francisco, which further supports my hypothesis that policing is meant to protect wealthy individuals and is neglected for lower income areas. 
+
+I will then provide a qualitative analysis on whether more or less crime happens in those areas. As stated on sfgov.org, “The Tenderloin Task Force was created on April 1st 1991 (with the first bicycle patrol in the city) to combat the high level of crime in that area and made its headquarters in the basement of the historic Hibernia Bank building. A new headquarters, now formally known as Tenderloin Station, opened in October 2000 at 301 Eddy Street.” The decision to open a police station in this case seems purely motivated by proximity to crime. Analyzing the average income and other predicting factors would inform decisions on where to open new stations in the future. Limitations to this study are any qualitative factors that influence police station construction such as the political landscape at the time, as those cannot be captured in a quantitative analysis. A brief commentary will however be provided on factors to consider and potential biases in addition to a data driven approach. 
+
+I will be using 2011 SF Police Station Data as well as 2020 Decennial Census Data to perform my analysis.
 
 
-##Change to SF Bay area not San Mateo County 
+1. https://sfist.com/2020/12/16/burglaries-arsons-and-car-thefts-are-all-up-significantly-in-sf-over-last-year/
+2. https://sfgov.org/scorecards/safety-net/homeless-population
+3. https://www.sanfranciscopolice.org/sites/default/files/Documents/PoliceCommission/Police%20Commission020718-BudgetPresentationFY2018-2019.pdf
+4. https://www.sfexaminer.com/news/data-shows-chesa-boudin-prosecutes-fewer-shoplifters-than-predecessor/
+5. https://thehill.com/opinion/criminal-justice/559465-the-little-things-are-turning-san-francisco-bad-in-a-big-way
 
-smc_pop_2020 <-
-  getCensus(
-    name = "dec/pl",
-    vintage = 2020,
-    region = "block:*", 
-    regionin = "state:06+county:081",
-    vars = "P1_001N"
-  ) %>% 
-  transmute(
-    block =
-      paste0(state,county,tract,block),
-    pop = P1_001N
-  )
 
-```
+The following is a map of police stations in San Francisco. We will ignore the SF airport police station and focus on the city limits. 
 
-```{r}
+```{r message = FALSE}
 
 sf_police_new <- read_csv("Local_Law_Enforcement_Locations.csv")
 
@@ -72,19 +72,16 @@ buffer <- sf_police_map_new %>%
   st_buffer(800) %>% 
   st_transform(4269)
 
-mapview(buffer)
 ```
 
 ```{r}
 sf_cbgs <- block_groups("CA", "San Francisco")
 
-mapview(sf_cbgs) + mapview(buffer)
 
 sf_police_within_halfmile <- sf_cbgs %>% 
   st_centroid() %>% 
   .[buffer, ]
 
-mapview(sf_police_within_halfmile)
 
 sf_cbgs_police <- sf_cbgs %>% 
   mutate(
@@ -94,47 +91,139 @@ sf_cbgs_police <- sf_cbgs %>%
       0
     )
   )
-
-mapview(sf_cbgs_police, zcol = "within_halfmile_police_station")
 ```
 
-ATTEMPT TO DO EQUITY ANALYSIS
 
 ```{r}
+sf_cbgs_police <- sf_cbgs %>% 
+  mutate(
+    within_halfmile_police_station = ifelse(
+      GEOID %in% sf_police_within_halfmile$GEOID,
+      1,
+      0
+    )
+  )
+
+```
+
+```{r}
+police_filtered <- sf_cbgs_police %>% 
+  select(c(GEOID,geometry,within_halfmile_police_station))
+```
+
+```{r}
+police_filtered <- police_filtered[police_filtered$within_halfmile_police_station !=0,]
+```
+
+
+
+
+```{r}
+
+Sys.setenv(CENSUS_KEY="c8aa67e4086b4b5ce3a8717f59faa9a28f611dab")
+
 acs_vars_2019_5yr <-
   listCensusMetadata(
     name = "2019/acs/acs5",
     type = "variables"
   )
 
-bay_income_white <-
+dec_vars_2020 <-
+  listCensusMetadata(
+    name = "2020/dec/pl",
+    type = "variables"
+  )
+
+smc_pop_race_2020 <-
   getCensus(
     name = "acs/acs5",
     vintage = 2019,
-    region = "county:075",
-    regionin = "state:06",
-    vars = "group(B19001A)"
+    region = "block group: *", 
+    regionin = "state:06+county:075",
+    vars = "group(B01001)"
   ) %>%
-  select(!c(GEO_ID,state,NAME) & !ends_with(c("EA","MA","M"))) %>%
+  mutate(
+    GEOID =
+      paste0(state,county,tract,block_group)
+  ) %>% 
+  select(!c(GEO_ID,state,county,tract,block_group,NAME) & !ends_with(c("EA","MA","M"))) %>%
   pivot_longer(
     ends_with("E"),
-    names_to = "name",
+    names_to = "variable",
     values_to = "estimate"
   ) %>%
   left_join(
     acs_vars_2019_5yr %>% 
-      select(name, label)
+      select(name, label), 
+    by = c("variable" = "name")
   ) %>% 
-  select(-name) %>% 
+  select(-variable) %>% 
   separate(
     label,
-    into = c(NA,NA,"income"),
+    into = c(NA,NA,"sex","age"),
     sep = "!!"
   ) %>% 
-  filter(!is.na(income))
+  filter(!is.na(age))
+```
 
+These are the blocks that are within half a mile of a police station. There appears to be a large gap in the Northwest and South Central parts of the city in terms of police coverage. 
+```{r}
+combined <- left_join(police_filtered, smc_pop_race_2020, by = c("GEOID")) 
+```
 
+```{r}
+combined_test <- combined %>%
+  group_by(GEOID, age) %>% 
+  summarize(estimate = sum(estimate)) 
+```
 
+```{r}
+mapview(combined_test)
+```
+
+```{r}
+perc_of_people <- 
+  combined %>% 
+  mutate(
+    young = 
+      ifelse(
+        age %in% c(
+          "18 and 19 years",
+          "20 years",
+          "21",
+          "22 to 24 years",
+          "25 to 29 years",
+          "30 to 34 years"
+        ),
+        estimate,
+        NA
+      )
+  ) %>% 
+  group_by(GEOID) %>% 
+  summarize(
+    young = sum(young, na.rm = T),
+    total_pop = sum(estimate, na.rm = T)
+  ) %>% 
+  mutate(
+    between_18_and_34 = young/total_pop*100
+  ) %>% 
+  filter(!is.na(between_18_and_34))
+```
+This is a map of the percentage of people near police stations who are between 18 to 34 years of age. 
+
+According to a 2013 city report:
+
+"Younger adults are the most likely age group to be incarcerated," the report states. "In San Francisco, 52 percent of inmates are between the ages of 18 and 35.
+
+https://www.sfgate.com/bayarea/article/S-F-jail-inmates-56-black-4744799.php
+
+This map shows that police stations are close to blocks that range from 3-80% of people who are young.
+```{r}
+mapview(perc_of_people, zcol = "between_18_and_34")
+```
+
+Block data for Equity Analysis:
+```{r}
 census_race_categories <- 
   c(
     "White Alone",
@@ -149,14 +238,19 @@ census_race_categories <-
 bay_income_race <-
   1:7 %>% 
   map_dfr(function(x){
-    getCensus(
-      name = "acs/acs5",
-      vintage = 2019,
-      region = "county:075",
-      regionin = "state:06",
-      vars = paste0("group(B19001",LETTERS[x],")")
+     getCensus(
+    name = "acs/acs5",
+    vintage = 2019,
+    region =  "block group: *", 
+    regionin = "state:06+county:075",
+    vars = paste0("group(B19001",LETTERS[x],")")
     ) %>%
-      select(!c(GEO_ID,state,NAME) & !ends_with(c("EA","MA","M"))) %>%
+       mutate(
+    GEOID =
+      paste0(state,county,tract,block_group)
+  ) %>% 
+  select(!c(GEO_ID,state,county,tract,block_group,NAME) &
+   !ends_with(c("EA","MA","M"))) %>%
       pivot_longer(
         ends_with("E"),
         names_to = "name",
@@ -172,17 +266,137 @@ bay_income_race <-
         into = c(NA,NA,"income"),
         sep = "!!"
       ) %>% 
+      
+      
       filter(!is.na(income)) %>% 
       mutate(race = census_race_categories[x])
   })
+```
 
-bay_income_race %>% 
-  group_by(income, race) %>% 
+
+
+
+```{r}
+bay_income_race <- left_join(police_filtered, bay_income_race, by = c("GEOID")) 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+Here I used decennial data to find demographics of people Who live close to a police station. This analysis is focused on individuals who are of one race and not mixed. 
+
+```{r}
+smc_pop_2020 <-
+  getCensus(
+    name = "dec/pl",
+    vintage = 2020,
+    region = "block:*", 
+    regionin = "state:06+county:075",
+    vars = "P1_001N"
+  ) %>% 
+  transmute(
+    block =
+      paste0(state,county,tract,block),
+    pop = P1_001N
+  )
+```
+
+```{r}
+smc_pop_2020_original <-
+  getCensus(
+    name = "dec/pl",
+    vintage = 2020,
+    region = "block:*", 
+    regionin = "state:06+county:075",
+    vars = "P1_001N"
+  ) 
+```
+
+
+```{r}
+smc_pop_race_2020 <-
+  getCensus(
+    name = "dec/pl",
+    vintage = 2020,
+    region = "block:*", 
+    regionin = "state:06+county:075",
+    vars = "group(P1)"
+  ) %>% 
+  mutate(
+    block =
+      paste0(state,county,tract,block)
+  ) %>% 
+  select(!c(GEO_ID,state,county,tract,NAME) & !ends_with(c("NA"))) %>% 
+  pivot_longer(
+    ends_with("N"),
+    names_to = "name",
+    values_to = "estimate"
+  ) %>%
+  left_join(
+    dec_vars_2020 %>% 
+      select(name, label)
+  ) %>% 
+  select(-name) %>% 
+  separate(
+    label,
+    into = c(NA,NA,NA,"race"),
+    sep = "!!"
+  )
+```
+
+```{r}
+smc_pop_race_2020 <- smc_pop_race_2020 %>% 
+  filter(
+    race %in% c("White alone", "Black or African American alone", "American Indian and Alaska Native alone", "Asian alone")
+  )
+```
+
+
+```{r}
+blocks_2020 <- blocks("CA", "San Francisco", year = 2020, progress_bar = F)
+```
+
+
+```{r}
+
+   nfo_boundary <- places("CA", progress_bar = F) %>%
+    filter(NAME == "San Francisco")
+
+
+smc_pop_race_2020 <- smc_pop_race_2020 %>% 
+  left_join(blocks_2020 %>% select(block = GEOID20)) %>% 
+  st_as_sf() %>% 
+  st_centroid() %>% 
+  .[nfo_boundary, ] %>% 
+  st_drop_geometry() %>% 
+  left_join(blocks_2020 %>% select(block = GEOID20)) %>% 
+  st_as_sf()
+```
+
+```{r}
+smc_pop_filtered <- smc_pop_race_2020 %>%
+    st_centroid() %>%
+  .[police_filtered, ]
+```
+The following chart shows that it is mostly White and Asian Americans who live close to a police station. This is in line with my preliminary hypothesis that these police stations are placed in wealthier areas to provide a sense of safety for residents while still targeting a poorer demographic for incarceration.  
+
+
+```{r}
+smc_pop_filtered %>% 
+  group_by(estimate, race) %>% 
   summarize(estimate = sum(estimate)) %>% 
   ggplot() +
   geom_bar(
     aes(
-      x = income,
+      x = race,
       y = estimate,
       fill = race
     ),
@@ -191,10 +405,21 @@ bay_income_race %>%
   ) +
   labs(
     x = "Household income",
-    y = "Number of households",
-    title = "Bay Area household income by race",
+    y = "Number of people ",
+    title = "Demographics of people that live close to a police station",
     fill = "Race of householder"
   ) +
-  coord_flip()
+  coord_flip() +
+  theme(
+    legend.position = "bottom",
+    legend.direction = "vertical"
+  )  +
+  guides(
+    fill = guide_legend(
+      reverse = T
+    )
+  )
 ```
+
+
 

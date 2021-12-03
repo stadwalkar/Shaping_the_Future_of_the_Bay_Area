@@ -1,0 +1,29 @@
+---
+title: "test"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(censusapi)
+library(sf)
+library(mapview)
+library(tigris)
+library(leaflet)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+point <- 
+  c(-122.16642, 37.3839) %>% 
+  st_point() %>% 
+  st_sfc() %>% 
+  st_set_crs(4326)
+```
+
