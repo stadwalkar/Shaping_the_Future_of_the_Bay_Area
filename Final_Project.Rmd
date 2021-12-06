@@ -19,17 +19,17 @@ library(tidyr)
 library(dplyr)
 library(ggplot2)
 ```
-##An Investigation Into Changing Demographics Near Police Stations in San Francisco
+## An Investigation Into Changing Demographics Near Police Stations in San Francisco
 
-Crime in San Francisco has seen a significant rise throughout the Covid-19  pandemic. November 2019 to November 2020 shows a 42% jump in burglaries citywide and 34% uptick in car thefts1. This coincides with a rise in the homeless population; in 2019 there was an increase of more than 30% over the 2017 count2. It’s easy to attribute a causal relationship between the two, but that inference may be based more on bias than fact. There are a number of confounding factors that may exacerbate these issues, such as ineffectual policing and increasing home prices. The San Francisco Police budget has steadily increased year over year,3 yet many of these social inequity problems persist not only in SF but the rest of urban America. These include not only homlessness and crime, but racial profiling by the police, the lack of prosecution for crimes4 leading to recidivism, and more. 
+Crime in San Francisco has seen a significant rise throughout the Covid-19 pandemic. November 2019 to November 2020 shows a 42% jump in burglaries citywide and 34% uptick in car thefts(1). This coincides with a rise in the homeless population; in 2019 there was an increase of more than 30% over the 2017 count(2). It’s easy to attribute a causal relationship between the two, but that inference may be based more on bias than fact. There are a number of confounding factors that may exacerbate these issues, such as ineffectual policing and increasing home prices. The San Francisco Police budget has steadily increased year over year,(3) yet many of these social inequity problems persist not only in SF but the rest of urban America. These include not only homelessness and crime, but racial profiling by the police, the lack of prosecution for crimes(4) leading to recidivism, and more. 
 
-For my project, I will use San Francisco as an example to explore the relationship between police stations and the demographics of residents nearby. Using census data, I can identify the demographic of those that live within a half mile of a police station and perform an equity analysis. My hypothesis is that most police stations are placed in wealthy areas to provide a sense of security, whereas lower income neighborhoods will have less policing, which in turn leads to more crime. 
+For my project, I will use San Francisco as an example to explore the relationship between police stations and the demographics of residents nearby. Using census data, I can identify the demographic of those that live within a half mile of a police station and perform an equity analysis. My hypothesis is that most police stations are placed in wealthy areas with highly educated people, to provide a sense of security whereas lower income neighborhoods will have less policing and education, which in turn leads to more crime. 
 
-In 2014, Californians passed Proposition 47 that reclassified nonviolent theft as misdemeanors as long as the stolen goods are worth less than $9505. That is just one example of decriminalization in San Francisco, which further supports my hypothesis that policing is meant to protect wealthy individuals and is neglected for lower income areas. 
+In 2014, Californians passed Proposition 47 that reclassified nonviolent theft as misdemeanors as long as the stolen goods are worth less than $950(5). That is just one example of decriminalization in San Francisco, which further supports my hypothesis that policing is meant to protect wealthy individuals and is neglected for lower income areas. 
 
 I will then provide a qualitative analysis on whether more or less crime happens in those areas. As stated on sfgov.org, “The Tenderloin Task Force was created on April 1st 1991 (with the first bicycle patrol in the city) to combat the high level of crime in that area and made its headquarters in the basement of the historic Hibernia Bank building. A new headquarters, now formally known as Tenderloin Station, opened in October 2000 at 301 Eddy Street.” The decision to open a police station in this case seems purely motivated by proximity to crime. Analyzing the average income and other predicting factors would inform decisions on where to open new stations in the future. Limitations to this study are any qualitative factors that influence police station construction such as the political landscape at the time, as those cannot be captured in a quantitative analysis. A brief commentary will however be provided on factors to consider and potential biases in addition to a data driven approach. 
 
-I will be using 2011 SF Police Station Data as well as 2020 Decennial Census Data to perform my analysis.
+I will be using ArcGIS Police Station Data, 2020 Decennial Census Data and ACS 2019 5 year data to perform my analysis.
 
 
 1. https://sfist.com/2020/12/16/burglaries-arsons-and-car-thefts-are-all-up-significantly-in-sf-over-last-year/
@@ -75,7 +75,7 @@ buffer <- sf_police_map_new %>%
 ```
 
 ```{r}
-sf_cbgs <- block_groups("CA", "San Francisco")
+sf_cbgs <- block_groups("CA", "San Francisco", progress_bar = F)
 
 
 sf_police_within_halfmile <- sf_cbgs %>% 
@@ -166,7 +166,7 @@ smc_pop_race_2020 <-
   filter(!is.na(age))
 ```
 
-These are the blocks that are within half a mile of a police station. There appears to be a large gap in the Northwest and South Central parts of the city in terms of police coverage. 
+These are the blocks that are within half a mile of a police station. There appears to be a large gap in the Northwest and South Central parts of the city in terms of police coverage. These are historically wealthier areas, such as Presidio, Sunset, and Cow Hollow.
 ```{r}
 combined <- left_join(police_filtered, smc_pop_race_2020, by = c("GEOID")) 
 ```
@@ -217,12 +217,11 @@ According to a 2013 city report:
 
 https://www.sfgate.com/bayarea/article/S-F-jail-inmates-56-black-4744799.php
 
-This map shows that police stations are close to blocks that range from 3-80% of people who are young.
+This map shows that police stations are close to blocks that range from 3-80% of people who are young. Now let's look at the demographics of people in this area (excluding age).
 ```{r}
 mapview(perc_of_people, zcol = "between_18_and_34")
 ```
 
-Block data for Equity Analysis:
 ```{r}
 census_race_categories <- 
   c(
@@ -243,7 +242,7 @@ bay_income_race <-
     vintage = 2019,
     region =  "block group: *", 
     regionin = "state:06+county:075",
-    vars = paste0("group(B19001",LETTERS[x],")")
+    vars = paste0("group(C23002",LETTERS[x],")")
     ) %>%
        mutate(
     GEOID =
@@ -283,15 +282,7 @@ bay_income_race <- left_join(police_filtered, bay_income_race, by = c("GEOID"))
 
 
 
-
-
-
-
-
-
-
-
-Here I used decennial data to find demographics of people Who live close to a police station. This analysis is focused on individuals who are of one race and not mixed. 
+Next I used decennial data to find demographics of people Who live close to a police station. This analysis is focused on individuals who are of one race and not mixed. 
 
 ```{r}
 smc_pop_2020 <-
@@ -386,7 +377,7 @@ smc_pop_filtered <- smc_pop_race_2020 %>%
     st_centroid() %>%
   .[police_filtered, ]
 ```
-The following chart shows that it is mostly White and Asian Americans who live close to a police station. This is in line with my preliminary hypothesis that these police stations are placed in wealthier areas to provide a sense of safety for residents while still targeting a poorer demographic for incarceration.  
+The following chart shows that it is mostly White and Asian Americans who live close to a police station. Next let's look at the income and education of these people.
 
 
 ```{r}
@@ -421,5 +412,144 @@ smc_pop_filtered %>%
   )
 ```
 
+Income data is not available on the block level for the decennial/acs data sets. I am instead using acs tract level data. Below is a map of these tracts. 
+
+
+
+```{r}
+ca_tracts <- tracts("CA", cb = T, progress_bar = F)
+ca_cities <- places("CA", cb = T, progress_bar = FALSE)
+bay_county_names <-
+  c(
+    "San Francisco"
+  )
+bay_counties <-
+  counties("CA", cb = T, progress_bar = F) %>%
+  filter(NAME %in% bay_county_names)
+
+
+
+bay_cities <- ca_cities[bay_counties, ]
+
+
+bay_tracts_within <-
+  ca_tracts %>% 
+  st_centroid() %>% 
+  .[police_filtered, ] %>% 
+  st_drop_geometry() %>% 
+  left_join(ca_tracts %>% select(GEOID)) %>% 
+  st_as_sf()
+
+mapview(bay_tracts_within)
+```
+
+
+
+```{r}
+
+
+colnames(ca_tracts)[3]<-"tract"
+
+bay_education_income_tract <- 
+  getCensus(
+    name = "acs/acs5",
+    vintage = 2019,
+    region = "tract:*",
+    regionin = "state:06+county:075",
+    vars = c(
+      "B06009_001E",
+      "B06009_002E",
+      "B06009_003E",
+      "B19001_001E",
+      "B19001_014E",
+      "B19001_015E",
+      "B19001_016E",
+      "B19001_017E"
+    )
+) %>% 
+  left_join(ca_tracts %>% select(tract,GEOID)
+  
+)
+
+
+combined_1 <- left_join(bay_education_income_tract, bay_tracts_within, by = c("GEOID","geometry")) 
+
+combined_1 <- combined_1[!is.na(combined_1$TRACTCE),]
+
+
+ 
+```
+```{r}
+
+comb <- combined_1 %>% 
+  transmute(
+    tract = paste0(state, county, tract),
+    perc_college = 1 - (B06009_002E + B06009_003E) / B06009_001E,
+    perc_over100k = (B19001_014E + B19001_015E + B19001_016E + B19001_017E) / B19001_001E
+  ) %>% 
+  filter(
+    !is.na(perc_college), 
+    !is.na(perc_over100k)
+  )
+
+```
+
+The following is a regression analysis on the correlation between percentage of people who go to college and the percentage of people who make over $100k per year. 
+
+```{r}
+ggplot() +
+  geom_point(
+    data = comb,
+    aes(
+      x = perc_college,
+      y = perc_over100k
+    )
+  )
+```
+```{r}
+ggplot(
+  data = comb,
+  aes(
+      x = perc_college,
+      y = perc_over100k
+    )
+) +
+  geom_point() +
+  geom_smooth(method = "lm") 
+```
+
+
+
+```{r}
+boom <- lm(perc_over100k ~ perc_college, comb)
+```
+
+
+
+```{r}
+ plot(density(residuals(boom)))
+```
+
+```{r}
+summary(boom)
+```
+From the information above it seems like the residual plot is not significantly skewed. The r value is 0.496 meaning that variation in college explains 49.6% of the variation in income. 
+
+Below I have applied a log transformation for illustration purposes only. It does not appear to be adequate for the data used. 
+
+```{r}
+log_model <- lm(log(perc_over100k) ~ perc_college, comb)
+plot(density(residuals(log_model)))
+
+```
+
+```{r}
+summary(log_model)
+```
+Correlation between income, college, and demographics were explored in this report. The Black population in San Francisco is over represented in jail as a result of over policing. They typically live closer to police stations and make up a larger portion of the lower income households. Something interested from this study is that more wealthy areas don't have police stations, such as Cow Hollow, etc., mentioned earlier. This goes against my initial hypothesis.
+
+It appears that income and college are correlated by statistical significance. What we can learn from this study is that increasing access to education, can lead to increased income, and potentially lower crime. When making policy recommendations to increase education, it is important to be as objective as possible and be aware of biases. College may not be the best form of education given it's cost prohibitive. Vocational school may yield similar results. Assuming that only black people suffer is also something to be aware of. Education is something that should be accessible to all people. 
+
+Overall it can be inferred that police stations are placed in areas where there is more crime, and one potential solution is to provide more education to the residents in those areas. 
 
 
