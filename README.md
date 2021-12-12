@@ -12,4 +12,11 @@ I will then provide a qualitative analysis on whether more or less crime happens
 
 I will be using ArcGIS Police Station Data, 2020 Decennial Census Data and ACS 2019 5 year data to perform my analysis.
 
+(1) https://sfist.com/2020/12/16/burglaries-arsons-and-car-thefts-are-all-up-significantly-in-sf-over-last-year/
+(2) https://sfgov.org/scorecards/safety-net/homeless-population
+(3) https://www.sanfranciscopolice.org/sites/default/files/Documents/PoliceCommission/Police%20Commission020718-BudgetPresentationFY2018-2019.pdf
+(4) https://www.sfexaminer.com/news/data-shows-chesa-boudin-prosecutes-fewer-shoplifters-than-predecessor/
+(5) https://thehill.com/opinion/criminal-justice/559465-the-little-things-are-turning-san-francisco-bad-in-a-big-way
+
+
 Click [here](https://stadwalkar.github.io/Final_Project.html "218X") to view the full analysis.
