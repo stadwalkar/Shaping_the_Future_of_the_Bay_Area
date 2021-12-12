@@ -454,7 +454,7 @@ bay_education_income_tract <-
   getCensus(
     name = "acs/acs5",
     vintage = 2019,
-    region = "tract:*",
+    region = "block group:*",
     regionin = "state:06+county:075",
     vars = c(
       "B06009_001E",
