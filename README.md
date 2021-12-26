@@ -19,4 +19,4 @@ I will be using ArcGIS Police Station Data, 2020 Decennial Census Data and ACS 2
 (5) https://thehill.com/opinion/criminal-justice/559465-the-little-things-are-turning-san-francisco-bad-in-a-big-way
 
 
-Click [here](https://stadwalkar.github.io/Final_Project.html "218X") to view the full analysis.
+Click [here](https://stadwalkar.github.io/Shaping_the_Future_of_the_Bay_Area/Final_Project.html "218X") to view the full analysis.
